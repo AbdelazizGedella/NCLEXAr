@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NCLEX Notes || Signup</title>
+
+  <!-- Tailwind + DaisyUI -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
+
+  <!-- Firebase Compat -->
+ <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+<!-- ملفك -->
+<script defer src="./js/login.js"></script>
+
+
+  <!-- Icons -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/icon/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icon/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icon/favicon-16x16.png">
+  <link rel="manifest" href="/icon/site.webmanifest">
+
+  <style>
+    :root{ --mc-bg:#07102F; --mc-primary:#3b82f6; --mc-accent:#22d3ee; }
+    body{
+      background:
+        radial-gradient(1200px 600px at 10% -10%,rgba(34,211,238,.18),transparent 60%),
+        radial-gradient(800px 600px at 110% 10%,rgba(59,130,246,.18),transparent 60%),
+        var(--mc-bg);
+    }
+    .glass{
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      backdrop-filter: blur(14px);
+      border-radius: 22px;
+    }
+    .grid-overlay{
+      position: fixed; inset:0; pointer-events:none; opacity:.12;
+      background-image:
+        linear-gradient(transparent 23px, rgba(255,255,255,.08) 24px),
+        linear-gradient(90deg, transparent 23px, rgba(255,255,255,.08) 24px);
+      background-size: 24px 24px;
+    }
+    .brand-badge{ background: linear-gradient(135deg,#6d28d9, #2563eb); }
+    .pulse-ring::after{
+      content:""; position:absolute; inset:-6px; border-radius:inherit;
+      border:2px solid rgba(34,211,238,.4); animation:pulse 2s infinite ease-in-out;
+    }
+    @keyframes pulse{ 0%{opacity:.7; transform:scale(1)} 100%{opacity:0; transform:scale(1.25)} }
+  </style>
+</head>
+<body class="min-h-screen relative">
+  <div class="grid-overlay"></div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast toast-end toast-top z-50"></div>
+
+  <!-- Top bar -->
+  <header class="w-full fixed top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-3">
+        <span class="brand-badge text-white font-bold px-3 py-1 rounded-xl shadow-md">NCLEX</span>
+        <span class="text-white/90 font-semibold tracking-wide">NCLEX Notes بالعربي</span>
+      </a>
+      <a href="Login.html" class="btn btn-sm btn-ghost text-white">Login</a>
+    </div>
+  </header>
+
+  <main class="pt-24 pb-10 px-4">
+    <div class="max-w-xl mx-auto glass p-8 bg-base-100/60">
+      <div class="text-center mb-8">
+        <div class="relative mx-auto w-16 h-16 rounded-2xl bg-success/20 pulse-ring"></div>
+        <h2 class="mt-4 text-2xl font-bold text-white">Create account</h2>
+        <p class="text-white/60 text-sm">
+          سجّل حسابك وابدأ تنظيم ملاحظاتك لأسئلة الـ NCLEX بالعربي
+        </p>
+      </div>
+
+      <label class="form-control w-full mb-4">
+        <div class="label"><span class="label-text text-white/70">Full name</span></div>
+        <label class="input input-bordered flex items-center gap-2">
+          <i class="fa-regular fa-user opacity-70"></i>
+          <input id="signupName" type="text" placeholder="Your name"
+                 class="grow" autocomplete="name" />
+        </label>
+      </label>
+
+      <label class="form-control w-full mb-4">
+        <div class="label"><span class="label-text text-white/70">Email</span></div>
+        <label class="input input-bordered flex items-center gap-2">
+          <i class="fa-regular fa-envelope opacity-70"></i>
+          <input id="signupEmail" type="email" placeholder="you@email.com"
+                 class="grow" autocomplete="email" />
+        </label>
+      </label>
+
+      <label class="form-control w-full mb-4">
+        <div class="label"><span class="label-text text-white/70">Password</span></div>
+        <label class="input input-bordered flex items-center gap-2">
+          <i class="fa-solid fa-lock opacity-70"></i>
+          <input id="signupPassword" type="password" placeholder="At least 6 characters"
+                 class="grow" autocomplete="new-password" />
+        </label>
+      </label>
+
+      <button onclick="signup()" id="btnSignup" class="btn btn-success w-full py-3 text-lg">
+        Create account
+      </button>
+
+      <div class="divider my-6">or</div>
+
+      <p class="text-center text-white/70 text-sm">
+        Already have an account?
+        <a href="Login.html" class="link link-info">Login</a>
+      </p>
+
+      <p class="text-center text-white/60 text-xs mt-4">
+        <a class="link link-accent" href="index.html">← Back to main page</a>
+      </p>
+    </div>
+  </main>
+
+  <!-- FontAwesome -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/js/all.min.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NCLEX Notes || Login</title>
+
+  <!-- Tailwind + DaisyUI -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
+
+  <!-- Firebase Compat -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+<!-- ملفك -->
+<script defer src="./js/login.js"></script>
+
+
+  <!-- Icons + Fonts -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/icon/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icon/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icon/favicon-16x16.png">
+  <link rel="manifest" href="/icon/site.webmanifest">
+
+  <style>
+    :root{ --mc-bg:#07102F; --mc-primary:#3b82f6; --mc-accent:#22d3ee; }
+    body{
+      background:
+        radial-gradient(1200px 600px at 10% -10%,rgba(34,211,238,.18),transparent 60%),
+        radial-gradient(800px 600px at 110% 10%,rgba(59,130,246,.18),transparent 60%),
+        var(--mc-bg);
+    }
+    .glass{
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      backdrop-filter: blur(14px);
+      border-radius: 22px;
+    }
+    .grid-overlay{
+      position: fixed; inset:0; pointer-events:none; opacity:.12;
+      background-image:
+        linear-gradient(transparent 23px, rgba(255,255,255,.08) 24px),
+        linear-gradient(90deg, transparent 23px, rgba(255,255,255,.08) 24px);
+      background-size: 24px 24px;
+    }
+    .brand-badge{ background: linear-gradient(135deg,#6d28d9, #2563eb); }
+    .pulse-ring::after{
+      content:""; position:absolute; inset:-6px; border-radius:inherit;
+      border:2px solid rgba(34,211,238,.4); animation:pulse 2s infinite ease-in-out;
+    }
+    @keyframes floaty{ 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-10px) } }
+    @keyframes pulse{ 0%{opacity:.7; transform:scale(1)} 100%{opacity:0; transform:scale(1.25)} }
+    .floating{ animation: floaty 6s ease-in-out infinite; }
+    .panel{ min-height: 640px; }
+    @media (max-width: 768px){
+      .panel{ min-height: auto; }
+    }
+  </style>
+</head>
+<body class="min-h-screen relative">
+  <div class="grid-overlay"></div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast toast-end toast-top z-50"></div>
+
+  <!-- Top bar -->
+  <header class="w-full fixed top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-3">
+        <span class="brand-badge text-white font-bold px-3 py-1 rounded-xl shadow-md">NCLEX</span>
+        <span class="text-white/90 font-semibold tracking-wide">NCLEX Notes بالعربي</span>
+      </a>
+      <a href="Signup.html" class="btn btn-sm btn-info">Create account</a>
+    </div>
+  </header>
+
+  <main class="pt-24 pb-10 px-4">
+    <div class="max-w-6xl mx-auto glass panel overflow-hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2">
+        <!-- Left hero -->
+        <section class="hidden md:flex flex-col justify-center gap-6 p-12 relative">
+          <div class="absolute -top-10 -left-10 w-40 h-40 rounded-3xl bg-cyan-400/20 blur-2xl floating"></div>
+          <div class="absolute -bottom-10 -right-10 w-48 h-48 rounded-full bg-blue-500/20 blur-3xl floating" style="animation-delay:1.2s"></div>
+
+          <h1 class="text-4xl xl:text-5xl font-black leading-tight text-white">
+            Welcome back 👋
+          </h1>
+          <p class="text-white/70 text-lg">
+            سجّل الدخول لـ مساحة شرح أسئلة الـ NCLEX بالعربي، مع ملاحظات ذكية، صوتيات، وتتبع لتقدمك.
+          </p>
+
+          <ul class="space-y-3 text-white/80">
+            <li class="flex items-center gap-3">
+              <span class="badge badge-info badge-outline">ملاحظات</span> بنك أسئلة منظم + شروحات عربية
+            </li>
+            <li class="flex items-center gap-3">
+              <span class="badge badge-primary badge-outline">Progress</span> متابعة تقدمك في الموضوعات
+            </li>
+            <li class="flex items-center gap-3">
+              <span class="badge badge-accent badge-outline">Audio</span> الاستماع للأسئلة والإجابات صوتيًا
+            </li>
+          </ul>
+
+          <div class="mt-2">
+            <div class="stats shadow-lg">
+              <div class="stat">
+                <div class="stat-title">Questions</div>
+                <div class="stat-value text-info">200+</div>
+              </div>
+              <div class="stat">
+                <div class="stat-title">Topics</div>
+                <div class="stat-value text-primary">15</div>
+              </div>
+              <div class="stat">
+                <div class="stat-title">Study Sessions</div>
+                <div class="stat-value text-accent">∞</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Right: login form -->
+        <section class="p-6 sm:p-10 bg-base-100/60">
+          <div class="max-w-md mx-auto">
+            <div class="text-center mb-8">
+              <div class="relative mx-auto w-16 h-16 rounded-2xl bg-info/20 pulse-ring"></div>
+              <h2 class="mt-4 text-2xl font-bold text-white">Login</h2>
+              <p class="text-white/60 text-sm">Use your email & password to access NCLEX Notes</p>
+            </div>
+
+            <label class="form-control w-full mb-4">
+              <div class="label"><span class="label-text text-white/70">Email</span></div>
+              <label class="input input-bordered flex items-center gap-2">
+                <i class="fa-regular fa-envelope opacity-70"></i>
+                <input id="email" type="email" placeholder="you@email.com"
+                       class="grow" autocomplete="email" />
+              </label>
+            </label>
+
+            <label class="form-control w-full mb-2">
+              <div class="label"><span class="label-text text-white/70">Password</span></div>
+              <label class="input input-bordered flex items-center gap-2">
+                <i class="fa-solid fa-lock opacity-70"></i>
+                <input id="password" type="password" placeholder="••••••••"
+                       class="grow" autocomplete="current-password" />
+                <button type="button" id="togglePwd" class="btn btn-ghost btn-xs">Show</button>
+              </label>
+            </label>
+
+            <div id="capsWarn" class="text-warning text-sm mb-3 hidden">Caps Lock is ON</div>
+
+            <div class="flex items-center justify-between mb-5">
+              <label class="label cursor-pointer gap-2">
+                <input id="remember" type="checkbox" class="checkbox checkbox-sm" />
+                <span class="label-text text-white/70">Remember email</span>
+              </label>
+              <button type="button" onclick="resetPassword()" class="link link-info text-sm">
+                Forgot password?
+              </button>
+            </div>
+
+            <button onclick="login()" id="btnLogin" class="btn btn-primary w-full py-3 text-lg">
+              Login
+            </button>
+
+            <div class="divider my-6">or</div>
+
+            <p class="text-center text-white/70 text-sm">
+              Don’t have an account?
+              <a href="Signup.html" class="link link-info">Create one</a>
+            </p>
+
+            <p class="text-center text-white/60 text-xs mt-4">
+              <a class="link link-accent" href="index.html">← Back to main page</a>
+            </p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <div class="pointer-events-none fixed bottom-6 right-6 opacity-70 hidden sm:block">
+    <div class="tooltip tooltip-left" data-tip="Secure & Fast">
+      <div class="w-12 h-12 rounded-2xl bg-info/20 grid place-items-center glass">
+        <i class="fa-solid fa-shield-halved text-info"></i>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Toggle password
+    const pwd = document.getElementById('password');
+    const toggle = document.getElementById('togglePwd');
+    toggle?.addEventListener('click', () => {
+      const t = pwd.type === 'password' ? 'text' : 'password';
+      pwd.type = t;
+      toggle.textContent = t === 'password' ? 'Show' : 'Hide';
+    });
+
+    // Caps Lock warning
+    const caps = document.getElementById('capsWarn');
+    ['keyup','keydown'].forEach(ev =>
+      pwd.addEventListener(ev, e => {
+        caps.classList.toggle('hidden', !e.getModifierState('CapsLock'));
+      })
+    );
+
+    // Remember email
+    const emailEl = document.getElementById('email');
+    const remember = document.getElementById('remember');
+    const KEY = 'nclex_last_email';
+    emailEl.value = localStorage.getItem(KEY) || '';
+    remember.checked = !!emailEl.value;
+    document.getElementById('btnLogin').addEventListener('click', () => {
+      if (remember.checked) localStorage.setItem(KEY, emailEl.value.trim());
+      else localStorage.removeItem(KEY);
+    });
+
+    // Enter = Login
+    document.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter') document.getElementById('btnLogin').click();
+    });
+  </script>
+
+  <!-- FontAwesome -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/js/all.min.js" defer></script>
+</body>
+</html>
