@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>دفتر ملاحظات دراسية — Q&A من Google Sheets</title>
+  <title>NCLEXAr — ادرس NCLEX بالعربي</title>
 
   <!-- Tailwind + DaisyUI -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -29,44 +29,178 @@
   <script src="./js/login.js"></script>
 
   <style>
-    :root { --ink:#e2e8f0; --ink-soft:#94a3b8; --glass:rgba(15,23,42,.5); --glass-2:rgba(30,41,59,.55); }
-    body{font-family:'Cairo',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-      background: radial-gradient(1200px 600px at 80% -10%, rgba(14,165,233,.2), transparent 40%),
-                  linear-gradient(180deg,#0b1e3b 0%,#0f172a 60%,#0b1324 100%);
-      color:var(--ink);}
-    .glass{background:var(--glass);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.06);border-radius:1rem;}
-    .chip{border:1px solid rgba(148,163,184,.25);padding:2px 8px;border-radius:999px;font-size:12px;color:#cbd5e1;}
-    .card-hover:hover{transform:translateY(-2px);transition:.2s ease;border-color:rgba(14,165,233,.35);}
-    .truncate-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-    .en{ color:#f59e0b !important; font-weight:600; }
-    .sticky-bar{position:sticky;top:0;z-index:40;background:linear-gradient(180deg, rgba(15,23,42,.9), rgba(15,23,42,.6));backdrop-filter:blur(6px);border-bottom:1px solid rgba(255,255,255,.06);}
-    .media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.75rem}
+    :root {
+      --ink:#e2e8f0;
+      --ink-soft:#94a3b8;
+      --glass:rgba(15,23,42,.5);
+      --glass-2:rgba(30,41,59,.55);
+    }
+
+    body{
+      font-family:'Cairo',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      color:var(--ink);
+      min-height:100vh;
+    }
+
+    /* الثيمات */
+    body.theme-deep {
+      background:
+        radial-gradient(1200px 600px at 80% -10%, rgba(14,165,233,.25), transparent 45%),
+        radial-gradient(900px 500px at 0% 100%, rgba(59,130,246,.22), transparent 50%),
+        linear-gradient(180deg,#020617 0%,#020617 35%,#020617 100%);
+    }
+    body.theme-ocean {
+      background:
+        radial-gradient(1100px 550px at 10% -10%, rgba(45,212,191,.25), transparent 45%),
+        radial-gradient(900px 500px at 100% 100%, rgba(59,130,246,.25), transparent 55%),
+        linear-gradient(180deg,#020617 0%,#0b1120 60%,#082f49 100%);
+      color:#e0faff;
+    }
+    /* خليه في الآخر برضه dark-friendly */
+    body.theme-paper {
+      background:
+        radial-gradient(1100px 550px at 10% -10%, rgba(148,163,184,.25), transparent 45%),
+        linear-gradient(180deg,#020617 0%,#020617 60%,#020617 100%);
+      color:#e2e8f0;
+    }
+
+    .glass{
+      background:var(--glass);
+      backdrop-filter:blur(14px);
+      border:1px solid rgba(148,163,184,.28);
+      border-radius:1.1rem;
+      box-shadow:0 18px 45px rgba(15,23,42,.65);
+    }
+    body.theme-paper .glass{
+      background:var(--glass);
+      border-color:rgba(148,163,184,.35);
+      box-shadow:0 18px 45px rgba(15,23,42,.65);
+    }
+
+    .chip{
+      border:1px solid rgba(148,163,184,.35);
+      padding:2px 8px;
+      border-radius:999px;
+      font-size:12px;
+      color:#cbd5e1;
+    }
+    body.theme-paper .chip{
+      color:#cbd5e1;
+      border-color:rgba(148,163,184,.45);
+    }
+
+    .card-hover{
+      transition:.2s ease;
+    }
+    .card-hover:hover{
+      transform:translateY(-3px) scale(1.01);
+      box-shadow:0 18px 40px rgba(15,23,42,.8);
+      border-color:rgba(56,189,248,.55);
+    }
+
+    .truncate-2{
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+    }
+    .en{
+      color:#f59e0b !important;
+      font-weight:600;
+    }
+    .sticky-bar{
+      position:sticky;
+      top:0;
+      z-index:40;
+      background:linear-gradient(180deg, rgba(15,23,42,.96), rgba(15,23,42,.78));
+      backdrop-filter:blur(6px);
+      border-bottom:1px solid rgba(148,163,184,.26);
+    }
+
+    .media-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+      gap:.75rem
+    }
     .aspect-video{position:relative;padding-top:56.25%}
     .aspect-video > *{position:absolute;inset:0;width:100%;height:100%;border-radius:.75rem}
-    .btn-fab{position:fixed;right:16px;bottom:16px;z-index:50}
+    .btn-fab{
+      position:fixed;
+      right:16px;
+      bottom:16px;
+      z-index:50;
+    }
 
-    /* مربعات التصنيف */
-    .level-squares{display:flex;gap:6px;margin-top:.35rem}
-    .level-squares span{width:14px;height:14px;border-radius:3px;background:#1f2937;border:1px solid #334155;opacity:.6}
-    .level-squares span.active{opacity:1;border-color:transparent}
+    .level-squares{
+      display:flex;
+      gap:6px;
+      margin-top:.35rem
+    }
+    .level-squares span{
+      width:14px;
+      height:14px;
+      border-radius:3px;
+      background:#1f2937;
+      border:1px solid #334155;
+      opacity:.6
+    }
+    .level-squares span.active{
+      opacity:1;
+      border-color:transparent
+    }
 
-    /* المرفقات عرض كامل داخل المودال */
     #mMedia{grid-template-columns:1fr;}
     #mMedia img{width:100%;height:auto;border-radius:.75rem}
 
-    /* تمييزات مخصصة */
-    .badge-burgundy{background:#7b1e3c;border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:999px;padding:.15rem .5rem;font-size:.75rem}
+    .badge-burgundy{
+      background:#7b1e3c;
+      border:1px solid rgba(255,255,255,.12);
+      color:#fff;
+      border-radius:999px;
+      padding:.15rem .5rem;
+      font-size:.75rem
+    }
     .example-line{color:#f9a8d4}
-    .example-badge{background:rgba(236,72,153,.15);border:1px solid rgba(236,72,153,.35);color:#f9a8d4;border-radius:999px;padding:.15rem .5rem;font-size:.75rem}
-    .badge-important{background:#b45309;border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:999px;padding:.15rem .5rem;font-size:.75rem}
+    .example-badge{
+      background:rgba(236,72,153,.15);
+      border:1px solid rgba(236,72,153,.35);
+      color:#f9a8d4;
+      border-radius:999px;
+      padding:.15rem .5rem;
+      font-size:.75rem
+    }
+    .badge-important{
+      background:#b45309;
+      border:1px solid rgba(255,255,255,.12);
+      color:#fff;
+      border-radius:999px;
+      padding:.15rem .5rem;
+      font-size:.75rem
+    }
     .important-line{color:#fbbf24}
 
-    /* Stage Flow (سطر المراحل) */
-    .stage-flow{display:flex;gap:.5rem;align-items:center;white-space:nowrap;overflow-x:auto;padding:.25rem .5rem;border-radius:.5rem;border:1px solid rgba(148,163,184,.18);background:rgba(148,163,184,.06)}
-    .stage-node{display:inline-flex;align-items:center;padding:.15rem .55rem;border-radius:999px;border:1px solid rgba(148,163,184,.35);background:rgba(148,163,184,.12);font-size:.85rem}
+    .stage-flow{
+      display:flex;
+      gap:.5rem;
+      align-items:center;
+      white-space:nowrap;
+      overflow-x:auto;
+      padding:.25rem .5rem;
+      border-radius:.5rem;
+      border:1px solid rgba(148,163,184,.18);
+      background:rgba(148,163,184,.06)
+    }
+    .stage-node{
+      display:inline-flex;
+      align-items:center;
+      padding:.15rem .55rem;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.35);
+      background:rgba(148,163,184,.12);
+      font-size:.85rem
+    }
     .stage-arrow{opacity:.75}
 
-    /* جداول Markdown داخل الإجابات */
     .qa-table{width:100%}
     .qa-table th,.qa-table td{ text-align:center; }
     .qa-table thead th{
@@ -74,36 +208,113 @@
       border-bottom: 1px solid rgba(148,163,184,.28);
       font-weight:700;
     }
-
-    /* عنوان فقرة داخل الإجابة: أي سطر ينتهي بـ : */
     .answer-heading{ color:#93c5fd; font-weight:700; }
+
+    /* أنيميشن خفيفة للّوجو */
+    @keyframes float-soft{
+      0%,100%{ transform:translateY(0); box-shadow:0 15px 35px rgba(56,189,248,.4); }
+      50%{ transform:translateY(-4px); box-shadow:0 25px 55px rgba(56,189,248,.7); }
+    }
+    .logo-orb{
+      animation:float-soft 6s ease-in-out infinite;
+    }
+
+    /* أنيميشن خفيفة للفلاتر */
+    .chip-animated{
+      transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    }
+    .chip-animated:hover{
+      transform:translateY(-1px);
+      box-shadow:0 8px 18px rgba(15,23,42,.4);
+      border-color:rgba(56,189,248,.7);
+    }
+
+    /* تحسين شكل الـ search */
+    .search-shell{
+      position:relative;
+    }
+    .search-shell::before{
+      content:'';
+      position:absolute;
+      inset:-1px;
+      border-radius:999px;
+      background:linear-gradient(90deg,rgba(56,189,248,.8),rgba(129,140,248,.8),rgba(45,212,191,.8));
+      opacity:.2;
+      z-index:-1;
+      filter:blur(6px);
+    }
+    .search-input{
+      background:rgba(15,23,42,.8);
+      border-color:rgba(148,163,184,.35);
+    }
+
   </style>
 </head>
-<body class="min-h-screen">
+<body class="theme-deep">
 
   <!-- Toast (من login.js) -->
   <div id="toastContainer" class="toast toast-top toast-end z-50"></div>
 
   <!-- Header -->
-  <header class="max-w-6xl mx-auto px-4 pt-8 pb-3">
-    <div class="flex items-center justify-between gap-4">
-      <div>
-        <h1 class="text-2xl sm:text-3xl font-bold">دفتر ملاحظات دراسية — Q&A من Google Sheets</h1>
-        <p class="text-sm text-[var(--ink-soft)]">
-          قراءة من Google Sheets كـ CSV، بحث + فلاتر + أسئلة مشابهة — كله محلي.
-        </p>
+  <header class="max-w-6xl mx-auto px-4 pt-6 pb-4">
+    <div class="glass px-4 py-3 md:px-6 md:py-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <!-- Left: Logo + Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-400 via-cyan-400 to-blue-700 flex items-center justify-center shadow-2xl logo-orb">
+          <span class="text-xl font-extrabold text-slate-950">N</span>
+        </div>
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
+              NCLEX<span class="text-sky-400">Ar</span>
+            </h1>
+            <span class="badge badge-outline border-sky-500/60 text-sky-200 text-[11px]">
+              UWorld Notes Companion
+            </span>
+          </div>
+          <p class="text-xs sm:text-sm text-[var(--ink-soft)] mt-1">
+            ادرس NCLEX بالعربي بملاحظات UWorld مترتبة، أسئلة &amp; إجابات، وصوت عربي/إنجليزي في نفس الوقت.
+          </p>
+        </div>
       </div>
 
-      <!-- اسم الشخص اللي فاتح -->
-      <div class="flex items-center gap-2 text-sm text-[var(--ink-soft)]">
-        <i class="fa-regular fa-user"></i>
-        <span id="currentUserName">...</span>
+      <!-- Right: User + Subscription + Theme switcher -->
+      <div class="flex flex-col items-stretch sm:items-end gap-2">
+        <div class="flex items-center gap-3 justify-between sm:justify-end">
+          <div class="text-right text-xs sm:text-sm">
+            <div class="flex items-center gap-1 justify-end">
+              <i class="fa-regular fa-user text-sky-300"></i>
+              <span id="currentUserName" class="font-medium">...</span>
+            </div>
+            <div id="subscriptionRemaining" class="text-[11px] mt-0.5 text-emerald-300">
+              <!-- يتم تعبئته من الجافاسكربت (الأيام المتبقية) -->
+            </div>
+          </div>
+
+          <!-- Theme toggle -->
+          <div class="flex items-center gap-1 bg-slate-900/60 rounded-full px-2 py-1 border border-slate-700/70">
+            <span class="hidden md:inline text-[10px] text-slate-300 mr-1">المظهر</span>
+            <button type="button" class="w-6 h-6 rounded-full bg-gradient-to-br from-sky-500 to-indigo-600 border border-sky-300/80 shadow-md"
+                    title="ثيم ليلي" data-theme-btn data-theme-btn-value="theme-deep"></button>
+            <button type="button" class="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-400 to-emerald-500 border border-emerald-300/80 shadow-md"
+                    title="ثيم محيط" data-theme-btn data-theme-btn-value="theme-ocean"></button>
+          </div>
+        </div>
+
+        <!-- Small helper line (شيلنا استخدم البحث) -->
+        <div class="flex items-center gap-2 text-[11px] text-[var(--ink-soft)] justify-end">
+          <a href="https://www.linkedin.com/in/abdelaziz-ibrahim-gedeleila-773b2b141/" target="_blank"
+             class="inline-flex items-center gap-1 text-sky-300 hover:text-sky-100 text-[11px]">
+            <i class="fa-brands fa-linkedin text-sky-400"></i>
+            <span>تواصل مع الـ Owner</span>
+          </a>
+        </div>
       </div>
     </div>
   </header>
 
-  <!-- Sections Sticky Bar -->
-  <nav id="sectionBar" class="sticky-bar">
+  <!-- Sections Sticky Bar (مخفي بس المحافظ على الـ IDs) -->
+  <nav id="sectionBar" class="sticky-bar hidden">
     <div class="max-w-6xl mx-auto px-4 py-2 overflow-x-auto">
       <div id="sectionChips" class="flex gap-2 items-center"></div>
     </div>
@@ -112,65 +323,104 @@
   <!-- ============ CSV URL (هتتخفى لو الاشتراك شغال) ============ -->
   <section id="csvSection" class="max-w-6xl mx-auto px-4 mt-3">
     <div class="glass p-4 mb-4">
+      <div class="flex items-center gap-2 mb-3 text-xs text-[var(--ink-soft)]">
+        <i class="fa-solid fa-wrench text-sky-400"></i>
+        <span>إعداد داخلي (Admin) — لا يظهر للمستخدم النهائي عند تفعيل الاشتراك ✅</span>
+      </div>
       <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
         <div class="w-full sm:flex-1">
-          <label class="text-sm text-[var(--ink-soft)]">رابط CSV من Google Sheets (للاختبار اليدوي)</label>
-          <input id="csvUrl" type="url" placeholder="للاستخدام الداخلي فقط" class="input input-bordered w-full"/>
+          <label class="text-xs text-[var(--ink-soft)] mb-1 block">رابط CSV من Google Sheets (للاختبار اليدوي)</label>
+          <input id="csvUrl" type="url" placeholder="للاستخدام الداخلي فقط"
+                 class="input input-bordered w-full input-sm bg-slate-900/70 border-slate-700"/>
         </div>
         <div class="flex gap-2">
-          <button id="saveUrl" class="btn btn-success"><i class="fa-solid fa-floppy-disk mr-2"></i>حفظ</button>
-          <button id="loadBtn" class="btn btn-info"><i class="fa-solid fa-rotate mr-2"></i>تحديث</button>
+          <button id="saveUrl" class="btn btn-success btn-sm">
+            <i class="fa-solid fa-floppy-disk mr-1"></i>حفظ
+          </button>
+          <button id="loadBtn" class="btn btn-info btn-sm">
+            <i class="fa-solid fa-rotate mr-1"></i>تحديث
+          </button>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Controls + Quick stats -->
+  <!-- Controls (Search + Filters فقط) -->
   <section class="max-w-6xl mx-auto px-4">
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
-      <div class="md:col-span-6 glass p-4">
-        <div class="flex flex-col lg:flex-row gap-3 items-stretch">
-          <div class="flex-1 relative">
-            <input id="searchInput" type="text" placeholder="ابحث باسم السؤال أو الكلمات المفتاحية…" class="input input-bordered w-full pr-10"/>
-            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+    <!-- Search + filters -->
+    <div class="glass p-4 md:p-5">
+      <div class="flex flex-col gap-3">
+        <!-- Improved Search Box -->
+        <div class="search-shell rounded-full">
+          <div class="relative">
+            <input id="searchInput"
+                   type="text"
+                   placeholder="اكتب كلمة من السؤال أو الإجابة أو المرض…"
+                   class="search-input input input-bordered w-full pr-12 pl-4 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-sky-400/70 focus:border-sky-400/60"/>
+            <div class="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-slate-300 text-xs">
+              <i class="fa-solid fa-magnifying-glass text-sky-300"></i>
+              <span class="hidden sm:inline">Ctrl + F للبحث السريع</span>
+            </div>
           </div>
-          <select id="sectionFilter" class="select select-bordered w-full lg:w-48">
+          <div class="mt-2 flex flex-wrap gap-2 text-[11px] text-[var(--ink-soft)]">
+            <span class="chip chip-animated bg-slate-900/60">مثال: anemia • electrolytes • burns</span>
+            <span class="chip chip-animated bg-slate-900/60">اكتب جزء من الجملة أو diagnosis</span>
+          </div>
+        </div>
+
+        <!-- Filters Row -->
+        <div class="flex flex-col lg:flex-row gap-3 items-stretch mt-2">
+          <select id="sectionFilter" class="select select-bordered w-full lg:w-52 select-sm">
             <option value="">كل الأقسام</option>
           </select>
-          <select id="difficultyFilter" class="select select-bordered w-full lg:w-40">
+
+          <select id="difficultyFilter" class="select select-bordered w-full lg:w-40 select-sm">
             <option value="">كل المستويات</option>
             <option value="1">1</option><option value="2">2</option>
             <option value="3">3</option><option value="4">4</option><option value="5">5</option>
           </select>
-          <label class="label cursor-pointer gap-2">
-            <span class="label-text">المفضلة</span>
-            <input id="favOnly" type="checkbox" class="toggle toggle-info"/>
+
+          <label class="label cursor-pointer gap-2 justify-start lg:justify-center">
+            <span class="label-text text-xs sm:text-sm">المفضلة</span>
+            <input id="favOnly" type="checkbox" class="toggle toggle-info toggle-sm"/>
           </label>
         </div>
+
+        <!-- Tags Bar -->
         <div id="tagsBar" class="mt-3 flex flex-wrap gap-2"></div>
       </div>
-
-      <div class="md:col-span-6 glass p-4">
-        <h3 class="font-bold mb-2">إحصائيات سريعة</h3>
-        <ul class="text-sm space-y-1 text-[var(--ink-soft)]" id="stats"></ul>
-      </div>
     </div>
+
+    <!-- stats مخفية بس موجودة عشان الكود -->
+    <ul id="stats" class="hidden"></ul>
   </section>
 
-  <!-- Analytics Spoiler -->
-  <section class="max-w-6xl mx-auto px-4 mt-4">
+  <!-- Analytics Spoiler (مخفي بالكامل) -->
+  <section class="max-w-6xl mx-auto px-4 mt-4 hidden">
     <details id="analyticsPanel" class="glass p-4">
-      <summary class="cursor-pointer font-bold">تحليلات (اضغط للإظهار)</summary>
+      <summary class="cursor-pointer font-bold flex items-center gap-2">
+        <i class="fa-solid fa-chart-pie text-sky-400"></i>
+        <span>تحليلات</span>
+      </summary>
       <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="p-2 rounded-lg border border-slate-700/40"><canvas id="prodChart"></canvas></div>
-        <div class="p-2 rounded-lg border border-slate-700/40"><canvas id="secCountChart"></canvas></div>
-        <div class="p-2 rounded-lg border border-slate-700/40"><canvas id="secPointsChart"></canvas></div>
+        <div class="p-2 rounded-lg border border-slate-700/40 bg-slate-900/40">
+          <p class="text-xs text-[var(--ink-soft)] mb-1">نقاط يومية حسب تاريخ الإضافة</p>
+          <canvas id="prodChart"></canvas>
+        </div>
+        <div class="p-2 rounded-lg border border-slate-700/40 bg-slate-900/40">
+          <p class="text-xs text-[var(--ink-soft)] mb-1">توزيع الأسئلة حسب القسم</p>
+          <canvas id="secCountChart"></canvas>
+        </div>
+        <div class="p-2 rounded-lg border border-slate-700/40 bg-slate-900/40">
+          <p class="text-xs text-[var(--ink-soft)] mb-1">إجمالي النقاط لكل قسم</p>
+          <canvas id="secPointsChart"></canvas>
+        </div>
       </div>
     </details>
   </section>
 
   <!-- Results -->
-  <main class="max-w-6xl mx-auto px-4 mt-4">
+  <main class="max-w-6xl mx-auto px-4 mt-4 pb-16">
     <div id="results" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
     <div id="noData" class="hidden alert mt-4">لا توجد نتائج مطابقة.</div>
   </main>
@@ -178,7 +428,9 @@
   <!-- Modal -->
   <dialog id="qaModal" class="modal">
     <div class="modal-box w-11/12 max-w-4xl glass">
-      <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+      <form method="dialog">
+        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+      </form>
       <div class="space-y-3">
         <h3 class="font-bold text-xl" id="mQuestion" dir="ltr" class="text-left"></h3>
         <div class="flex flex-wrap gap-2 items-center text-sm">
@@ -190,8 +442,12 @@
             <select id="arVoiceSelect" class="select select-bordered select-xs w-44">
               <option value="">صوت عربي (افتراضي)</option>
             </select>
-            <button id="mSpeak" class="btn btn-xs btn-primary"><i class="fa-solid fa-volume-high mr-1"></i>اقرأ</button>
-            <button id="mStop" class="btn btn-xs btn-ghost"><i class="fa-solid fa-stop mr-1"></i>إيقاف</button>
+            <button id="mSpeak" class="btn btn-xs btn-primary">
+              <i class="fa-solid fa-volume-high mr-1"></i>اقرأ
+            </button>
+            <button id="mStop" class="btn btn-xs btn-ghost">
+              <i class="fa-solid fa-stop mr-1"></i>إيقاف
+            </button>
           </div>
         </div>
         <!-- scale داخل المودال -->
@@ -213,13 +469,17 @@
   </dialog>
 
   <!-- Global Stop TTS -->
-  <button id="stopAll" class="btn btn-error btn-fab"><i class="fa-solid fa-stop"></i></button>
+  <button id="stopAll" class="btn btn-error btn-fab">
+    <i class="fa-solid fa-stop"></i>
+  </button>
 
   <!-- Card Template -->
   <template id="cardTpl">
     <div class="glass card-hover border border-slate-800 p-4">
       <div class="flex items-start gap-3">
-        <button class="btn btn-xs btn-ghost mt-1" data-open title="عرض"><i class="fa-solid fa-up-right-from-square"></i></button>
+        <button class="btn btn-xs btn-ghost mt-1" data-open title="عرض">
+          <i class="fa-solid fa-up-right-from-square"></i>
+        </button>
         <div class="flex-1">
           <h3 class="font-bold text-base text-left" data-q style="direction:ltr"></h3>
           <div class="text-xs text-left mt-1" data-sectionline></div>
@@ -229,7 +489,36 @@
       </div>
     </div>
   </template>
+
+  <!-- App JS -->
   <script src="./js/uworld-notes.app.js"></script>
+
+  <!-- Theme switcher (تغيير الألوان) -->
+  <script>
+    (function(){
+      const THEME_KEY = 'nclexAr_theme';
+      const body = document.body;
+
+      function applyTheme(name){
+        body.classList.remove('theme-deep','theme-ocean','theme-paper');
+        body.classList.add(name);
+        try{ localStorage.setItem(THEME_KEY, name); }catch(e){}
+      }
+
+      // Load saved theme
+      let saved = null;
+      try{ saved = localStorage.getItem(THEME_KEY); }catch(e){}
+      if(!saved) saved = 'theme-deep';
+      applyTheme(saved);
+
+      document.querySelectorAll('[data-theme-btn]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const val = btn.getAttribute('data-theme-btn-value') || 'theme-deep';
+          applyTheme(val);
+        });
+      });
+    })();
+  </script>
 
 </body>
 </html>
