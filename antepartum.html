@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pregnancy & Postpartum Timeline</title>
+
+  <!-- Tailwind + DaisyUI -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700&display=swap" rel="stylesheet">
+
+  <!-- Firebase (نفس النسخة اللي بتستخدمها في NCLEXAr) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+  <!-- login.js: فيه firebaseConfig + initializeApp + showToast (لو معرف) -->
+  <script src="./js/login.js"></script>
+
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: linear-gradient(135deg, #081229, #0c1b3a);
+      color: #eaf3ff;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    svg#connections {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .trimester,
+    .post-container,
+    .labor-container {
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 30px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 15px rgba(255,255,255,0.1);
+      position: relative;
+      background: rgba(15,23,42,0.6);
+    }
+
+    .weeks-bar,
+    .months-bar {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      height: auto;
+      border-radius: 8px;
+      overflow: visible;
+      background: rgba(255,255,255,0.05);
+      margin-top: 8px;
+      min-height: 120px;
+    }
+
+    .week,
+    .month {
+      flex: 1;
+      border-right: 1px solid rgba(255,255,255,0.08);
+      text-align: center;
+      font-size: 11px;
+      padding-top: 4px;
+      opacity: 0.8;
+    }
+
+    .week:last-child,
+    .month:last-child {
+      border-right: none;
+    }
+
+    .milestone {
+      position: absolute;
+      height: 22px;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 11px;
+      padding: 2px 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: all 0.25s ease;
+      box-shadow: 0 0 8px rgba(255,255,255,0.15);
+    }
+
+    .milestone:hover {
+      transform: scale(1.05);
+      z-index: 20;
+    }
+
+    /* 🔹 أي حاجة Status = Anytime */
+    .milestone.anytime {
+      background-image: repeating-linear-gradient(
+        135deg,
+        rgba(255,255,255,0.35) 0,
+        rgba(255,255,255,0.35) 4px,
+        transparent 4px,
+        transparent 8px
+      );
+      background-size: 12px 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th,
+    td {
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 8px;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    th {
+      background: rgba(255,255,255,0.1);
+    }
+
+    .legend {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      font-size: 13px;
+    }
+
+    .legend div {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend span {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .legend-anytime {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      display: inline-block;
+      background-color: #00bcd4;
+      background-image: repeating-linear-gradient(
+        135deg,
+        rgba(255,255,255,0.6) 0,
+        rgba(255,255,255,0.6) 4px,
+        transparent 4px,
+        transparent 8px
+      );
+      background-size: 12px 12px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.35);
+    }
+
+    /* 🔹 Local legend تحت كل مربع */
+    .local-legend {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 10px;
+      font-size: 11px;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      opacity: 0.9;
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    /* Modal neat styling + RTL description */
+    .modal-box {
+      max-width: 550px;
+      background: #0e1b33;
+      color: white;
+      border: 1px solid rgba(0,255,255,0.2);
+      box-shadow: 0 0 20px rgba(0,255,255,0.2);
+      line-height: 1.4;
+    }
+
+    .modal-description {
+      white-space: pre-wrap;
+      direction: rtl;
+      text-align: right;
+      line-height: 1.4;
+      margin: 0;
+    }
+
+    /* هيدر بسيط + زر رجوع */
+    .top-bar-glass {
+      background: rgba(15,23,42,0.85);
+      backdrop-filter: blur(12px);
+      border-radius: 999px;
+      border: 1px solid rgba(56,189,248,0.5);
+      box-shadow: 0 18px 45px rgba(8,47,73,0.9);
+    }
+
+    @keyframes float-soft {
+      0%,100%{ transform:translateY(0); }
+      50%{ transform:translateY(-3px); }
+    }
+    .logo-pill {
+      animation: float-soft 5s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="p-4 md:p-6">
+
+  <!-- SVG connections -->
+  <svg id="connections"></svg>
+
+  <!-- ⬆️ Top nav: Back button + title -->
+  <header class="max-w-6xl mx-auto mb-6">
+    <div class="flex flex-col gap-3">
+      <div class="flex items-center justify-between gap-3 top-bar-glass px-4 py-2 md:px-6">
+        <div class="flex items-center gap-3">
+          <button
+            type="button"
+            onclick="window.location.href='index.html'"
+            class="btn btn-sm md:btn-md btn-ghost border border-cyan-500/60 text-cyan-200 hover:bg-cyan-500/10 rounded-full px-3 md:px-4">
+            <i class="fa-solid fa-arrow-right-long md:mr-1"></i>
+            <span class="hidden sm:inline">رجوع للرئيسية</span>
+          </button>
+
+          <div class="flex items-center gap-2">
+            <div class="w-9 h-9 md:w-11 md:h-11 rounded-2xl bg-gradient-to-br from-cyan-400 via-sky-500 to-indigo-700 flex items-center justify-center logo-pill">
+              <span class="text-lg md:text-xl font-extrabold text-slate-950">P</span>
+            </div>
+            <div>
+              <h1 class="text-base md:text-xl font-bold text-cyan-100">
+                Pregnancy &amp; Postpartum Timeline
+              </h1>
+              <p class="text-[11px] md:text-xs text-slate-300">
+                Private interactive milestones linked to your secured Google Sheet.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="hidden sm:flex items-center gap-3 text-xs text-slate-200">
+          <div class="flex flex-col items-end">
+            <span class="opacity-70">Signed in as</span>
+            <span id="currentUserName" class="font-semibold text-cyan-200">...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ANTEPARTUM SECTION -->
+  <h2 class="text-xl md:text-2xl font-bold text-cyan-300 mb-2 text-center">
+    Antepartum Milestone Timeline
+  </h2>
+
+  <div class="legend">
+    <div><span style="background:#f8a5c2"></span> 1st Trimester</div>
+    <div><span style="background:#9ae6b4"></span> 2nd Trimester</div>
+    <div><span style="background:#81ecec"></span> 3rd Trimester</div>
+    <div><span style="background:#ffeaa7"></span> Post-Term (41–45)</div>
+    <div>
+      <span class="legend-anytime"></span>
+      Anytime (Status = "Anytime" / اي وقت)
+    </div>
+  </div>
+
+  <div id="timelineContainer" class="max-w-6xl mx-auto relative"></div>
+
+  <!-- LABOR SECTION -->
+  <h2 class="text-xl md:text-2xl font-bold text-cyan-300 mb-2 mt-8 text-center">
+    Stages of Labor (1–4)
+  </h2>
+
+  <div id="laborTimelineContainer" class="max-w-6xl mx-auto relative"></div>
+
+  <!-- POSTPARTUM SECTION -->
+  <h2 class="text-xl md:text-2xl font-bold text-cyan-300 mb-2 mt-10 text-center">
+    Postpartum Timeline (0–12 Months)
+  </h2>
+
+  <div id="postTimelineContainer" class="max-w-6xl mx-auto relative"></div>
+
+  <!-- Tables -->
+  <div class="max-w-6xl mx-auto mt-10 space-y-8">
+    <!-- Antepartum table -->
+    <div class="overflow-x-auto">
+      <h3 class="text-lg font-semibold text-cyan-200 mb-2">Antepartum Items</h3>
+      <table class="text-sm" id="detailsTableAnte">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Status</th>
+            <th>From Week</th>
+            <th>To Week</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Labor table -->
+    <div class="overflow-x-auto">
+      <h3 class="text-lg font-semibold text-cyan-200 mb-2">Stages of Labor Items</h3>
+      <table class="text-sm" id="detailsTableLabor">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Status</th>
+            <th>From Stage</th>
+            <th>To Stage</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Postpartum table -->
+    <div class="overflow-x-auto">
+      <h3 class="text-lg font-semibold text-cyan-200 mb-2">Postpartum Items</h3>
+      <table class="text-sm" id="detailsTablePost">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Status</th>
+            <th>From Month</th>
+            <th>To Month</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <dialog id="infoModal" class="modal">
+    <form method="dialog" class="modal-box">
+      <h3 class="font-bold text-lg text-cyan-300 mb-2" id="modalTitle"></h3>
+      <p class="text-sm mb-1" id="modalType"></p>
+      <p class="text-sm mb-1" id="modalRange"></p>
+      <p class="text-sm mb-2" id="modalStatus"></p>
+      <hr class="my-3 border-cyan-700/40">
+      <p id="modalDesc" class="modal-description"></p>
+      <div class="modal-action">
+        <button class="btn btn-sm bg-cyan-600 text-white">Close</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Main App Script -->
+  <script>
+    (() => {
+      'use strict';
+
+      // 🔐 Firebase references
+      const auth = firebase.auth();
+      const db   = firebase.firestore();
+
+      // إعداد مكان Config الموديول في Firestore
+      // مثال: collection "modules" → doc "pregnancyTimeline" فيه field اسمه "sheetUrl"
+const MODULE_COLLECTION = 'config';
+const MODULE_DOC_ID     = 'pregnancyTimeline';
+
+      const anteContainer  = document.getElementById("timelineContainer");
+      const laborContainer = document.getElementById("laborTimelineContainer");
+      const postContainer  = document.getElementById("postTimelineContainer");
+      const modal          = document.getElementById("infoModal");
+      const anteTableBody  = document.querySelector("#detailsTableAnte tbody");
+      const laborTableBody = document.querySelector("#detailsTableLabor tbody");
+      const postTableBody  = document.querySelector("#detailsTablePost tbody");
+      const svg            = document.getElementById("connections");
+
+      const trimesterColors = {
+        1: "#f8a5c2",
+        2: "#9ae6b4",
+        3: "#81ecec",
+        4: "#ffeaa7" // Post-Term
+      };
+
+      const colorPalette = [
+        "#00bcd4","#f39c12","#e74c3c",
+        "#9b59b6","#1abc9c","#ff7675",
+        "#74b9ff","#00cec9"
+      ];
+
+      const trimesters = [
+        { id: 1, name: "1st Trimester", start: 1,  end: 13, color: trimesterColors[1] },
+        { id: 2, name: "2nd Trimester", start: 14, end: 27, color: trimesterColors[2] },
+        { id: 3, name: "3rd Trimester", start: 28, end: 40, color: trimesterColors[3] },
+        { id: 4, name: "Post-Term",     start: 41, end: 45, color: trimesterColors[4] },
+      ];
+
+      /* ========== Helpers ========== */
+
+      function safeText(value) {
+        return (value || '').toString();
+      }
+
+      // parser يحافظ على الـ newlines داخل الخلايا
+      function parseCSV(text) {
+        const rows = [];
+        let row = [];
+        let cell = "";
+        let insideQuote = false;
+
+        for (let i = 0; i < text.length; i++) {
+          const ch = text[i];
+
+          if (ch === '"') {
+            if (insideQuote && text[i + 1] === '"') {
+              cell += '"';
+              i++;
+            } else {
+              insideQuote = !insideQuote;
+            }
+          } else if (ch === ',' && !insideQuote) {
+            row.push(cell);
+            cell = "";
+          } else if ((ch === '\n' || ch === '\r') && !insideQuote) {
+            if (ch === '\r' && text[i + 1] === '\n') i++;
+            row.push(cell);
+            cell = "";
+            if (row.some(v => v.trim() !== "")) rows.push(row);
+            row = [];
+          } else {
+            cell += ch;
+          }
+        }
+        if (cell.length > 0 || row.length > 0) {
+          row.push(cell);
+          if (row.some(v => v.trim() !== "")) rows.push(row);
+        }
+        return rows;
+      }
+
+      function addLegendItem(legendEl, label, color, kind) {
+        const cleanLabel = safeText(label);
+        if (!legendEl || !cleanLabel) return;
+        if (!legendEl._items) legendEl._items = new Set();
+
+        let displayLabel = cleanLabel;
+        if (kind === "anytime-full") {
+          displayLabel = `${cleanLabel} – Anytime (full range)`;
+        } else if (kind === "anytime-partial") {
+          displayLabel = `${cleanLabel} – Anytime (limited window)`;
+        }
+
+        const key = displayLabel + "|" + color;
+        if (legendEl._items.has(key)) return;
+
+        legendEl._items.add(key);
+
+        let dotStyle = "";
+        if (kind === "anytime-full" || kind === "anytime-partial") {
+          dotStyle = `
+            background-color:${color};
+            background-image:repeating-linear-gradient(
+              135deg,
+              rgba(255,255,255,0.6) 0,
+              rgba(255,255,255,0.6) 4px,
+              transparent 4px,
+              transparent 8px
+            );
+            background-size:12px 12px;
+          `;
+        } else {
+          dotStyle = `background:${color};`;
+        }
+
+        const item = document.createElement("div");
+        item.className = "legend-item";
+
+        const dot = document.createElement("span");
+        dot.className = "legend-dot";
+        dot.style.cssText = dotStyle;
+
+        const labelSpan = document.createElement("span");
+        labelSpan.className = "legend-label";
+        labelSpan.textContent = displayLabel;
+
+        item.appendChild(dot);
+        item.appendChild(labelSpan);
+        legendEl.appendChild(item);
+      }
+
+      function isAnytimeStatus(data) {
+        const rawStatus = (data.Status || "").trim();
+        if (!rawStatus) return false;
+        const status = rawStatus.toLowerCase().replace(/\s+/g, "");
+        return status === "anytime" || rawStatus === "اي وقت";
+      }
+
+      /* ========== Build Base Layout (بدون بيانات) ========== */
+
+      function buildAnteTimeline() {
+        trimesters.forEach(tri => {
+          const div = document.createElement("div");
+          div.className = "trimester";
+          div.style.background = `${tri.color}25`;
+          div.innerHTML = `
+            <h2 class="font-semibold mb-2">${tri.name} (${tri.start}–${tri.end})</h2>
+            <div class="weeks-bar" id="trimester-${tri.start}"></div>
+            <div class="local-legend"></div>
+          `;
+          const bar = div.querySelector(".weeks-bar");
+          for (let w = tri.start; w <= tri.end; w++) {
+            const wk = document.createElement("div");
+            wk.className = "week";
+            wk.textContent = String(w);
+            bar.appendChild(wk);
+          }
+          anteContainer.appendChild(div);
+        });
+      }
+
+      function buildLaborTimeline() {
+        const div = document.createElement("div");
+        div.className = "labor-container";
+        div.style.background = "rgba(248, 165, 194, 0.18)";
+        div.innerHTML = `
+          <h2 class="font-semibold mb-2">Stages of Labor (1–4)</h2>
+          <div class="months-bar" id="labor-bar"></div>
+          <div class="local-legend" id="labor-legend"></div>
+        `;
+        const bar = div.querySelector("#labor-bar");
+        const stagesCount = 4;
+        for (let s = 1; s <= stagesCount; s++) {
+          const st = document.createElement("div");
+          st.className = "month";
+          st.textContent = String(s);
+          bar.appendChild(st);
+        }
+        laborContainer.appendChild(div);
+      }
+
+      function buildPostTimeline() {
+        const div = document.createElement("div");
+        div.className = "post-container";
+        div.style.background = `rgba(129,236,236,0.15)`;
+        div.innerHTML = `
+          <h2 class="font-semibold mb-2">Postpartum (Months 1–12)</h2>
+          <div class="months-bar" id="post-months-bar"></div>
+          <div class="local-legend" id="post-legend"></div>
+        `;
+        const bar = div.querySelector(".months-bar");
+        for (let m = 1; m <= 12; m++) {
+          const mm = document.createElement("div");
+          mm.className = "month";
+          mm.textContent = String(m);
+          bar.appendChild(mm);
+        }
+        postContainer.appendChild(div);
+      }
+
+      /* ========== Rendering Milestones ========== */
+
+      function renderAnteMilestones(dataArray) {
+        const placedByTri = { 1: [], 2: [], 3: [], 4: [] };
+
+        dataArray.forEach(data => {
+          const from = parseInt(data.From);
+          const to   = parseInt(data.To);
+          if (isNaN(from) || isNaN(to)) return;
+
+          const color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+          const triRanges = trimesters.filter(tri => !(to < tri.start || from > tri.end));
+          let lastBar = null;
+
+          triRanges.forEach(tri => {
+            const subFrom = Math.max(from, tri.start);
+            const subTo   = Math.min(to, tri.end);
+            const target  = document.querySelector(`#trimester-${tri.start}`);
+            const weeksCount = tri.end - tri.start + 1;
+
+            const milestone = document.createElement("div");
+            milestone.className = "milestone";
+            milestone.textContent = safeText(data.Name);
+            milestone.style.backgroundColor = color;
+            milestone.style.left = `${((subFrom - tri.start) / weeksCount) * 100}%`;
+            milestone.style.width = `${((subTo - subFrom + 1) / weeksCount) * 100}%`;
+
+            const isAnytime = isAnytimeStatus(data);
+            if (isAnytime) milestone.classList.add("anytime");
+
+            const isFullRangeHere = isAnytime && subFrom === tri.start && subTo === tri.end;
+            const legendKind = isAnytime
+              ? (isFullRangeHere ? "anytime-full" : "anytime-partial")
+              : "normal";
+
+            let topOffset = 45;
+            while (placedByTri[tri.id].some(p =>
+              !(subTo < p.from || subFrom > p.to) && Math.abs(p.top - topOffset) < 25
+            )) {
+              topOffset += 26;
+            }
+            milestone.style.top = `${topOffset}px`;
+            placedByTri[tri.id].push({ from: subFrom, to: subTo, top: topOffset });
+
+            const neededHeight = Math.max(120, topOffset + 40);
+            const currentHeight = parseInt(target.style.height || "0", 10);
+            if (!currentHeight || currentHeight < neededHeight) {
+              target.style.height = neededHeight + "px";
+            }
+
+            milestone.onclick = () => showModal(data, "Antepartum");
+            target.appendChild(milestone);
+
+            const legend = target.parentElement.querySelector(".local-legend");
+            addLegendItem(legend, data.Name, color, legendKind);
+
+            if (lastBar) drawConnection(lastBar, milestone);
+            lastBar = milestone;
+          });
+        });
+      }
+
+      function renderLaborMilestones(dataArray) {
+        const placed = [];
+        const bar = document.getElementById("labor-bar");
+        const stagesCount = 4;
+
+        dataArray.forEach(data => {
+          const from = parseInt(data.From);
+          const to   = parseInt(data.To);
+          if (isNaN(from) || isNaN(to)) return;
+
+          const color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+
+          const milestone = document.createElement("div");
+          milestone.className = "milestone";
+          milestone.textContent = safeText(data.Name);
+          milestone.style.backgroundColor = color;
+          milestone.style.left = `${((from - 1) / stagesCount) * 100}%`;
+          milestone.style.width = `${((to - from + 1) / stagesCount) * 100}%`;
+
+          const isAnytime = isAnytimeStatus(data);
+          if (isAnytime) milestone.classList.add("anytime");
+
+          const isFullRangeHere = isAnytime && from === 1 && to === stagesCount;
+          const legendKind = isAnytime
+            ? (isFullRangeHere ? "anytime-full" : "anytime-partial")
+            : "normal";
+
+          let topOffset = 45;
+          while (placed.some(p =>
+            !(to < p.from || from > p.to) && Math.abs(p.top - topOffset) < 25
+          )) {
+            topOffset += 26;
+          }
+          milestone.style.top = `${topOffset}px`;
+          placed.push({ from, to, top: topOffset });
+
+          const neededHeight = Math.max(120, topOffset + 40);
+          const currentHeight = parseInt(bar.style.height || "0", 10);
+          if (!currentHeight || currentHeight < neededHeight) {
+            bar.style.height = neededHeight + "px";
+          }
+
+          milestone.onclick = () => showModal(data, "Labor");
+          bar.appendChild(milestone);
+
+          const legend = document.getElementById("labor-legend");
+          addLegendItem(legend, data.Name, color, legendKind);
+        });
+      }
+
+      function renderPostMilestones(dataArray) {
+        const placed = [];
+        const bar = document.getElementById("post-months-bar");
+        const monthsCount = 12;
+
+        dataArray.forEach(data => {
+          const from = parseInt(data.From);
+          const to   = parseInt(data.To);
+          if (isNaN(from) || isNaN(to)) return;
+
+          const color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+
+          const milestone = document.createElement("div");
+          milestone.className = "milestone";
+          milestone.textContent = safeText(data.Name);
+          milestone.style.backgroundColor = color;
+          milestone.style.left = `${((from - 1) / monthsCount) * 100}%`;
+          milestone.style.width = `${((to - from + 1) / monthsCount) * 100}%`;
+
+          const isAnytime = isAnytimeStatus(data);
+          if (isAnytime) milestone.classList.add("anytime");
+
+          const isFullRangeHere = isAnytime && from === 1 && to === monthsCount;
+          const legendKind = isAnytime
+            ? (isFullRangeHere ? "anytime-full" : "anytime-partial")
+            : "normal";
+
+          let topOffset = 45;
+          while (placed.some(p =>
+            !(to < p.from || from > p.to) && Math.abs(p.top - topOffset) < 25
+          )) {
+            topOffset += 26;
+          }
+          milestone.style.top = `${topOffset}px`;
+          placed.push({ from, to, top: topOffset });
+
+          const neededHeight = Math.max(120, topOffset + 40);
+          const currentHeight = parseInt(bar.style.height || "0", 10);
+          if (!currentHeight || currentHeight < neededHeight) {
+            bar.style.height = neededHeight + "px";
+          }
+
+          milestone.onclick = () => showModal(data, "Postpartum");
+          bar.appendChild(milestone);
+
+          const legend = document.getElementById("post-legend");
+          addLegendItem(legend, data.Name, color, legendKind);
+        });
+      }
+
+      function drawConnection(bar1, bar2) {
+        if (!bar1 || !bar2) return;
+        const r1 = bar1.getBoundingClientRect();
+        const r2 = bar2.getBoundingClientRect();
+        const x1 = r1.x + r1.width;
+        const y1 = r1.y + r1.height / 2 + window.scrollY;
+        const x2 = r2.x;
+        const y2 = r2.y + r2.height / 2 + window.scrollY;
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", x1);
+        line.setAttribute("y1", y1);
+        line.setAttribute("x2", x2);
+        line.setAttribute("y2", y2);
+        line.setAttribute("stroke", "rgba(0,255,255,0.4)");
+        line.setAttribute("stroke-width", "2");
+        line.setAttribute("stroke-linecap", "round");
+        svg.appendChild(line);
+      }
+
+      function addToTable(data, section) {
+        const tr = document.createElement("tr");
+
+        const tdName   = document.createElement("td");
+        const tdStatus = document.createElement("td");
+        const tdFrom   = document.createElement("td");
+        const tdTo     = document.createElement("td");
+
+        tdName.textContent   = safeText(data.Name);
+        tdStatus.textContent = safeText(data.Status);
+        tdFrom.textContent   = safeText(data.From);
+        tdTo.textContent     = safeText(data.To);
+
+        tr.appendChild(tdName);
+        tr.appendChild(tdStatus);
+        tr.appendChild(tdFrom);
+        tr.appendChild(tdTo);
+
+        if (section === "ante") {
+          tr.onclick = () => showModal(data, "Antepartum");
+          anteTableBody.appendChild(tr);
+        } else if (section === "labor") {
+          tr.onclick = () => showModal(data, "Labor");
+          laborTableBody.appendChild(tr);
+        } else {
+          tr.onclick = () => showModal(data, "Postpartum");
+          postTableBody.appendChild(tr);
+        }
+      }
+
+      function showModal(data, typeLabel) {
+        const type = typeLabel || safeText(data.Type);
+        const lower = type.toLowerCase();
+
+        const modalTitle  = document.getElementById("modalTitle");
+        const modalType   = document.getElementById("modalType");
+        const modalRange  = document.getElementById("modalRange");
+        const modalStatus = document.getElementById("modalStatus");
+        const modalDesc   = document.getElementById("modalDesc");
+
+        modalTitle.textContent = safeText(data.Name);
+        modalType.textContent  = `Type: ${type}`;
+
+        let rangeLabel = "";
+        if (lower === "postpartum") {
+          rangeLabel = `Months: ${data.From} → ${data.To}`;
+        } else if (lower === "labor") {
+          rangeLabel = `Stages: ${data.From} → ${data.To}`;
+        } else {
+          rangeLabel = `Weeks: ${data.From} → ${data.To}`;
+        }
+        modalRange.textContent  = rangeLabel;
+        modalStatus.textContent = `Status: ${safeText(data.Status)}`;
+        modalDesc.textContent   = data.Description || "No additional notes.";
+
+        modal.showModal();
+      }
+
+      async function loadDataFromSheet(sheetUrl) {
+        const res = await fetch(sheetUrl);
+        if (!res.ok) throw new Error("Failed to fetch sheet");
+        const text = await res.text();
+
+        const rows = parseCSV(text);
+        if (!rows.length) return;
+
+        const headers = rows[0].map(h => h.trim());
+        const dataRows = rows.slice(1);
+
+        const data = dataRows.map(r => {
+          const obj = {};
+          headers.forEach((h, i) => {
+            obj[h] = (r[i] || "").trim();
+          });
+          return obj;
+        });
+
+        const anteData  = data.filter(d => (d.Type || "").toLowerCase() === "antepartum");
+        const postData  = data.filter(d => (d.Type || "").toLowerCase() === "postpartum");
+        const laborData = data.filter(d => (d.Type || "").toLowerCase() === "labor");
+
+        renderAnteMilestones(anteData);
+        renderLaborMilestones(laborData);
+        renderPostMilestones(postData);
+
+        anteData.forEach(d  => addToTable(d, "ante"));
+        laborData.forEach(d => addToTable(d, "labor"));
+        postData.forEach(d  => addToTable(d, "post"));
+      }
+
+      /* ========== Auth + Config ========== */
+
+      auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+          // ممكن ترجع على صفحة لوجين لو عندك صفحة مخصصة
+          window.location.href = 'index.html';
+          return;
+        }
+
+        // عرض اسم المستخدم في الهيدر (لو حابب)
+        const nameSpan = document.getElementById('currentUserName');
+        if (nameSpan) {
+          nameSpan.textContent = user.displayName || user.email || 'User';
+        }
+
+        // تحميل إعدادات الموديول من Firestore
+        try {
+          const snap = await db
+            .collection(MODULE_COLLECTION)
+            .doc(MODULE_DOC_ID)
+            .get();
+
+          if (!snap.exists) {
+            console.error('Module config not found in Firestore');
+            if (typeof showToast === 'function') {
+              showToast('error', 'Module config not found in Firestore (pregnancyTimeline).');
+            }
+            return;
+          }
+
+          const cfg = snap.data();
+          const sheetUrl = cfg.sheetUrl;
+          if (!sheetUrl) {
+            console.error('sheetUrl field is missing in module config');
+            if (typeof showToast === 'function') {
+              showToast('error', 'sheetUrl is not set for pregnancyTimeline module.');
+            }
+            return;
+          }
+
+          // بناء الـ layout الأولي ثم تحميل البيانات
+          buildAnteTimeline();
+          buildLaborTimeline();
+          buildPostTimeline();
+          await loadDataFromSheet(sheetUrl);
+
+        } catch (err) {
+          console.error('Error loading module config or sheet:', err);
+          if (typeof showToast === 'function') {
+            showToast('error', 'Error loading pregnancy module data.');
+          }
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
