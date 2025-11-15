@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notes</title>
+
+  <!-- Tailwind + DaisyUI -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+  <!-- login.js فيه firebaseConfig + initializeApp + showToast لو حابب -->
+  <script src="./js/login.js"></script>
+
+  <style>
+    body {
+      font-family: "Cairo", sans-serif;
+      background: linear-gradient(135deg, #081229, #0c1b3a);
+      color: #eaf3ff;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .note-card {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+      transition: transform 0.18s ease, box-shadow 0.18s ease,
+        border-color 0.18s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .note-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.5);
+      border-color: rgba(56, 189, 248, 0.6);
+    }
+
+    .badge-pill {
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-size: 11px;
+    }
+
+    .note-text {
+      line-height: 1.5;
+    }
+
+    .filters-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .filter-chip {
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 13px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.7);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      color: #e2e8f0;
+    }
+
+    .filter-chip:hover {
+      border-color: rgba(56, 189, 248, 0.8);
+    }
+
+    .filter-chip.active {
+      background: rgba(56, 189, 248, 0.1);
+      border-color: rgba(56, 189, 248, 1);
+      color: #e0faff;
+    }
+  </style>
+</head>
+<body class="p-4 md:p-6">
+  <div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <header class="mb-6 md:mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-bold text-cyan-300 mb-1">
+          Notes
+        </h1>
+   
+      </div>
+      <div class="flex flex-col items-end gap-2 text-right">
+      
+        <!-- زر الرجوع للرئيسية -->
+        <button
+          type="button"
+          class="btn btn-sm btn-outline btn-info"
+          onclick="window.location.href='index.html'">
+          عودة للصفحة الرئيسية
+        </button>
+      </div>
+    </header>
+
+    <!-- حالة التحميل / الأخطاء -->
+    <div id="loadingState" class="mt-4 mb-4 text-center text-xs md:text-sm text-slate-300">
+      جاري التحقق من المستخدم وتحميل الملاحظات…
+    </div>
+
+    <!-- Filters -->
+    <section class="mb-4">
+      <h2 class="text-sm font-semibold text-slate-200 mb-2">فلترة حسب القسم:</h2>
+      <div id="filters" class="filters-container"></div>
+    </section>
+
+    <!-- Notes List (🔹 خطوط تحت بعض، مش grid) -->
+    <section id="notesContainer" class="flex flex-col gap-3">
+      <!-- Cards will be injected here -->
+    </section>
+
+    <!-- Empty state -->
+    <div
+      id="emptyState"
+      class="hidden mt-10 text-center text-slate-400 text-sm"
+    >
+      لا توجد ملاحظات مطابقة للفلاتر الحالية.
+    </div>
+  </div>
+
+  <script>
+    const notesContainer = document.getElementById("notesContainer");
+    const filtersContainer = document.getElementById("filters");
+    const emptyState = document.getElementById("emptyState");
+    const loadingState = document.getElementById("loadingState");
+
+    let allNotes = [];
+    let currentFilter = "الكل";
+
+    // CSV parser يحافظ على الـ newlines جوه الخلايا
+    function parseCSV(text) {
+      const rows = [];
+      let row = [];
+      let cell = "";
+      let insideQuote = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+
+        if (ch === '"') {
+          if (insideQuote && text[i + 1] === '"') {
+            cell += '"';
+            i++;
+          } else {
+            insideQuote = !insideQuote;
+          }
+        } else if (ch === "," && !insideQuote) {
+          row.push(cell);
+          cell = "";
+        } else if ((ch === "\n" || ch === "\r") && !insideQuote) {
+          if (ch === "\r" && text[i + 1] === "\n") i++;
+          row.push(cell);
+          cell = "";
+          if (row.some((v) => v.trim() !== "")) rows.push(row);
+          row = [];
+        } else {
+          cell += ch;
+        }
+      }
+      if (cell.length > 0 || row.length > 0) {
+        row.push(cell);
+        if (row.some((v) => v.trim() !== "")) rows.push(row);
+      }
+      return rows;
+    }
+
+    async function loadNotes(sheetUrl) {
+      try {
+        const res = await fetch(sheetUrl);
+        const text = await res.text();
+        const rows = parseCSV(text);
+
+        if (!rows.length) {
+          if (loadingState) loadingState.textContent = "لا توجد بيانات في Google Sheets.";
+          return;
+        }
+
+        const headers = rows[0].map((h) => h.trim());
+        const dataRows = rows.slice(1);
+
+        const data = dataRows
+          .map((r) => {
+            const obj = {};
+            headers.forEach((h, i) => {
+              obj[h] = (r[i] || "").trim();
+            });
+            return obj;
+          })
+          .filter((row) => row.Note && row.Note.trim() !== "");
+
+        allNotes = data;
+        buildFilters();
+        renderNotes();
+
+        if (loadingState) loadingState.classList.add("hidden");
+      } catch (err) {
+        console.error("Error loading notes:", err);
+        if (loadingState) {
+          loadingState.textContent =
+            "تعذر تحميل الملاحظات (تأكد من الصلاحيات أو إعداد الرابط في Firebase).";
+        }
+      }
+    }
+
+    function buildFilters() {
+      filtersContainer.innerHTML = "";
+      const sections = Array.from(
+        new Set(
+          allNotes
+            .map((n) => n.Section && n.Section.trim())
+            .filter(Boolean)
+        )
+      );
+
+      const allLabel = "الكل";
+
+      const createChip = (label) => {
+        const btn = document.createElement("button");
+        btn.className = "filter-chip";
+        btn.textContent = label;
+        if (label === currentFilter) btn.classList.add("active");
+        btn.onclick = () => {
+          currentFilter = label;
+          document
+            .querySelectorAll(".filter-chip")
+            .forEach((c) => c.classList.remove("active"));
+          btn.classList.add("active");
+          renderNotes();
+        };
+        return btn;
+      };
+
+      filtersContainer.appendChild(createChip(allLabel));
+      sections.forEach((sec) => {
+        filtersContainer.appendChild(createChip(sec));
+      });
+    }
+
+function renderNotes() {
+  notesContainer.innerHTML = "";
+
+  let filtered = allNotes;
+  if (currentFilter !== "الكل") {
+    filtered = allNotes.filter(
+      (n) => (n.Section || "").trim() === currentFilter
+    );
+  }
+
+  if (!filtered.length) {
+    emptyState.classList.remove("hidden");
+    return;
+  } else {
+    emptyState.classList.add("hidden");
+  }
+
+  const badgeColors = [
+    "rgba(56,189,248,0.18)",
+    "rgba(129,140,248,0.22)",
+    "rgba(52,211,153,0.18)",
+    "rgba(248,250,252,0.12)",
+  ];
+
+  filtered.forEach((note, idx) => {
+    const card = document.createElement("article");
+    // خط واحد: البادج + النص جنب بعض
+    card.className = "note-card p-3 md:p-4";
+
+    const section = note.Section || "Uncategorized";
+    const badgeBg = badgeColors[idx % badgeColors.length];
+
+    card.innerHTML = `
+      <div class="flex items-start gap-3">
+        <span class="badge-pill text-xs mt-1" style="background:${badgeBg};">
+          ${section}
+        </span>
+        <p class="note-text text-sm md:text-[15px] text-slate-50 flex-1" dir="auto">
+          ${note.Note}
+        </p>
+      </div>
+    `;
+
+    notesContainer.appendChild(card);
+  });
+}
+    // 🔐 Bootstrap: تحقق من المستخدم + اقرأ لينك الشيت من Firestore (config/notesConfig)
+    document.addEventListener("DOMContentLoaded", () => {
+      const auth = firebase.auth();
+      const db = firebase.firestore();
+
+      auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+          if (loadingState) {
+            loadingState.textContent = "يتم تحويلك لصفحة الدخول…";
+          }
+          setTimeout(() => {
+            window.location.href = "index.html";
+          }, 1200);
+          return;
+        }
+
+        try {
+          // نفس ستايل الـ config اللي عندك: collection: config → doc: notesConfig
+          const cfgSnap = await db
+            .collection("config")
+            .doc("notesConfig")
+            .get();
+
+          if (!cfgSnap.exists) {
+            if (loadingState) {
+              loadingState.textContent =
+                "إعدادات الملاحظات غير موجودة في Firestore (doc: config/notesConfig).";
+            }
+            return;
+          }
+
+          const cfg = cfgSnap.data();
+          if (!cfg.sheetUrl) {
+            if (loadingState) {
+              loadingState.textContent = "الحقل sheetUrl غير مهيأ في config/notesConfig.";
+            }
+            return;
+          }
+
+          // تحميل الملاحظات من الرابط المخفي في Firestore
+          loadNotes(cfg.sheetUrl);
+        } catch (err) {
+          console.error("Error loading module config:", err);
+          if (loadingState) {
+            loadingState.textContent =
+              "لا يمكن الوصول للملاحظات (Missing or insufficient permissions).";
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
