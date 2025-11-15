@@ -56,7 +56,8 @@ const els = {
   analyticsPanel: document.getElementById('analyticsPanel'),
   arVoiceSelect: document.getElementById('arVoiceSelect'),
   csvSection: document.getElementById('csvSection'),
-  currentUserName: document.getElementById('currentUserName')
+  currentUserName: document.getElementById('currentUserName'),
+  subscriptionRemaining: document.getElementById('subscriptionRemaining')
 };
 
 /* LocalStorage keys */
@@ -680,9 +681,35 @@ function redirectToLinkedIn(msg){
     window.location.href = LINKEDIN_URL;
   }, 1500);
 }
+function parseSheetDate(str) {
+  if (!str) return null;
+  const s = String(str).trim();
+
+  // صيغة: YYYY-MM-DD أو YYYY/MM/DD
+  let m = s.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);
+  if (m) {
+    const y = Number(m[1]);
+    const mo = Number(m[2]) - 1;
+    const d = Number(m[3]);
+    return new Date(y, mo, d);
+  }
+
+  // صيغة: DD/MM/YYYY أو DD-MM-YYYY (محتملة من Sheets بالعربي)
+  m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if (m) {
+    const d = Number(m[1]);
+    const mo = Number(m[2]) - 1;
+    const y = Number(m[3]);
+    return new Date(y, mo, d);
+  }
+
+  // fallback: نعتمد على new Date مباشرة لو هي رينج تاني
+  const direct = new Date(s);
+  return isNaN(direct.getTime()) ? null : direct;
+}
 
 async function checkSubscriptionAndLoad(user) {
-  // 1) هات روابط الشيت من Firestore
+  // 1) هات روابط الشيت من Firestore (SUBS_CSV_URL + DATA_CSV_URL)
   await loadUworldConfig();
 
   const email = (user.email || '').trim().toLowerCase();
@@ -708,13 +735,37 @@ async function checkSubscriptionAndLoad(user) {
   }
 
   const expStr = (subRow.expire_date || '').trim();
-  const expDate = new Date(expStr);
-  const today = new Date();
-  today.setHours(0,0,0,0);
+  const expDate = parseSheetDate(expStr);
 
-  if (!expStr || isNaN(expDate.getTime()) || expDate < today) {
-    redirectToLinkedIn("انتهت فترة اشتراكك أو التاريخ غير مضبوط.");
+  if (!expStr || !expDate) {
+    redirectToLinkedIn("تاريخ الاشتراك غير مضبوط في الشيت. تواصل مع الأدمن.");
     return;
+  }
+
+  // نشتغل بتواريخ بدون وقت (midnight) علشان اختلاف التايمزون
+  const today = new Date();
+  const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const expMid = new Date(expDate.getFullYear(), expDate.getMonth(), expDate.getDate());
+
+  if (expMid < todayMid) {
+    redirectToLinkedIn("انتهت فترة اشتراكك. برجاء تجديد الاشتراك.");
+    return;
+  }
+
+  // عدد الأيام المتبقية بشكل شامل (لو اليوم الأخير محسوب)
+  const diffMs = expMid.getTime() - todayMid.getTime();
+  const daysLeft = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
+
+  if (els.subscriptionRemaining) {
+    let msg;
+    if (daysLeft <= 0) {
+      msg = "ينتهي اليوم ✅";
+    } else if (daysLeft === 1) {
+      msg = "متبقي يوم واحد في اشتراكك";
+    } else {
+      msg = `متبقي ${daysLeft} يوم في اشتراكك`;
+    }
+    els.subscriptionRemaining.textContent = msg;
   }
 
   // هنا الاشتراك سليم → حمّل الداتا الأساسية
@@ -730,14 +781,15 @@ async function checkSubscriptionAndLoad(user) {
 
   // حدّث اسم المستخدم في الهيدر
   if (els.currentUserName) {
-    els.currentUserName.textContent = user.displayName || user.email || 'عضو';
+    els.currentUserName.textContent = user.displayName || user.email;
   }
 
-  // أخفي خانة CSV اليدوية
+  // أخفي خانة CSV اليدوية (لو حاططها في div id="csvSection")
   if (els.csvSection) {
     els.csvSection.classList.add('hidden');
   }
 
+  // فعّل باقي الصفحة
   populateFromCSV(dataRows);
 }
 
@@ -765,15 +817,13 @@ els.difficultyFilter.addEventListener('change',()=>render());
 els.stopAll.addEventListener('click', ()=> window.speechSynthesis.cancel());
 
 /* ===== Init ===== */
-(function initApp(){
-  // مش هنظهر الرابط الحقيقي في الـ input
-  if (els.csvUrl) els.csvUrl.value = '';
-
+(async function init() {
   firebase.auth().onAuthStateChanged(async (user) => {
     if (!user) {
-      window.location.href = 'Login.html';
+      window.location.href = 'login.html';
       return;
     }
+
     try {
       await checkSubscriptionAndLoad(user);
     } catch (e) {
